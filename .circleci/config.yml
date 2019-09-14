@@ -97,6 +97,22 @@ jobs:
     - pipenv_run:
         script: typecheck
 
+  "publish":
+    docker:
+    - image: docker:latest
+    steps:
+    - setup_remote_docker
+    - git_checkout_from_cache
+    - run:
+        name: Docker Login
+        command: |
+          echo -n "${DOCKER_PASSWORD}" | docker login -u="${DOCKER_USERNAME}" --password-stdin
+    - run:
+        name: Docker Build and Push
+        command: |
+          export TAG="ixai/sufax:latest"
+          docker build . -t "${TAG}"
+          docker push "${TAG}"
 
 workflows:
   version: 2.1
@@ -113,3 +129,11 @@ workflows:
     - "typecheck":
         requires:
         - "init repository"
+    - "publish":
+        requires:
+          - "format"
+          - "lint"
+          - "typecheck"
+        filters:
+          branches:
+            only: master
